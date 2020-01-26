@@ -15,12 +15,17 @@ import com.google.android.exoplayer2.ExoPlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.drm.*
+import com.google.android.exoplayer2.source.ConcatenatingMediaSource
+import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.dash.DashMediaSource
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
+import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.util.EventLogger
 import com.google.android.exoplayer2.util.Log
+import com.google.android.exoplayer2.util.Util
 
 class MainActivity : AppCompatActivity() {
 
@@ -61,7 +66,12 @@ class MainActivity : AppCompatActivity() {
 //    drm: http://192.168.107.250:1935/vod/mp4:sample.mp4/manifest.mpd
 
     companion object {
-        private const val URL = "http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd"
+
+        //dash: "http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd"
+        //hls: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8"
+        //ss: "http://playready.directtaps.net/smoothstreaming/SSWSS720H264/SuperSpeedway_720.ism/Manifest"
+        private const val URL =
+            "http://playready.directtaps.net/smoothstreaming/SSWSS720H264/SuperSpeedway_720.ism/Manifest"
         private const val LICENSE_URL = ""
 
         private const val USERAGENT = "useragent"
@@ -84,19 +94,47 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        val drmSessionManager = createDrmManager()
+        setupPlayer()
 
-        if (drmSessionManager != null) {
-            val dashMediaSourceFactory =
-                DashMediaSource.Factory(DefaultHttpDataSourceFactory(USERAGENT))
-            dashMediaSourceFactory.setDrmSessionManager(drmSessionManager)
+        val uri = Uri.parse(URL)
 
-            setupPlayer()
+        val mediaSource = createMediaSource(uri)
 
-            exoPlayer?.prepare(dashMediaSourceFactory.createMediaSource(Uri.parse(URL)))
-        } else {
-            Toast.makeText(this, "Problem with drm", Toast.LENGTH_SHORT).show()
-            finish()
+        mediaSource?.let {
+            exoPlayer?.prepare(it)
+        } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
+
+
+//        val drmSessionManager = createDrmManager()
+//
+//        if (drmSessionManager != null) {
+//            val dashMediaSourceFactory =
+//                DashMediaSource.Factory(DefaultHttpDataSourceFactory(USERAGENT))
+//            dashMediaSourceFactory.setDrmSessionManager(drmSessionManager)
+//
+//            setupPlayer()
+//
+//
+//
+////            exoPlayer?.prepare(dashMediaSourceFactory.createMediaSource(Uri.parse(URL)))
+//
+//        } else {
+//            Toast.makeText(this, "Problem with drm", Toast.LENGTH_SHORT).show()
+//            finish()
+//        }
+    }
+
+    private fun createMediaSource(uri: Uri): MediaSource? {
+        val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(USERAGENT)
+
+        return when (@ContentType Util.inferContentType(uri)) {
+            C.TYPE_DASH -> DashMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+            C.TYPE_HLS -> HlsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+            C.TYPE_SS -> SsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+            else -> {
+                Log.e("ExoMple","")
+                null
+            }
         }
     }
 
@@ -141,7 +179,10 @@ class MainActivity : AppCompatActivity() {
         exoUniqueIdArray?.let {
             val exoUniqueId2 = Base64.encodeToString(exoUniqueIdArray, Base64.DEFAULT)
             Log.d("ExoMple", "exoUniqueId2: $exoUniqueId2")
-            Log.d("ExoMple", "exoUniqueIdByteArray: ${exoUniqueIdArray.asList().map { it.toChar() }}")
+            Log.d(
+                "ExoMple",
+                "exoUniqueIdByteArray: ${exoUniqueIdArray.asList().map { it.toChar() }}"
+            )
         }
 
         val deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
