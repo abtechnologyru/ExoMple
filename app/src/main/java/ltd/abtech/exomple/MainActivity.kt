@@ -1,63 +1,27 @@
 package ltd.abtech.exomple
 
 import android.annotation.TargetApi
-import android.media.MediaDrm
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.provider.Settings
-import android.util.Base64
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlaybackException
-import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.drm.*
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.dash.DashMediaSource
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import com.google.android.exoplayer2.util.EventLogger
 import com.google.android.exoplayer2.util.Log
 import com.google.android.exoplayer2.util.Util
+import ltd.abtech.exomple.logs.*
 
 class MainActivity : AppCompatActivity() {
-
-    private class LoggerDefaultDrmSessionEventListener : DefaultDrmSessionEventListener {
-        override fun onDrmSessionAcquired() {
-            Log.d("ExoMple", "exoplayer drm: onDrmSessionAcquired")
-        }
-
-        override fun onDrmKeysRestored() {
-            Log.d("ExoMple", "exoplayer drm: onDrmKeysRestored")
-
-        }
-
-        override fun onDrmKeysLoaded() {
-            Log.d("ExoMple", "exoplayer drm: onDrmKeysLoaded")
-
-        }
-
-        override fun onDrmKeysRemoved() {
-            Log.d("ExoMple", "exoplayer drm: onDrmKeysRemoved")
-
-        }
-
-        override fun onDrmSessionManagerError(error: Exception) {
-            Log.d("ExoMple", "exoplayer drm: onDrmSessionManagerError: $error")
-
-        }
-
-        override fun onDrmSessionReleased() {
-            Log.d("ExoMple", "exoplayer drm: onDrmSessionReleased")
-        }
-    }
 
 //    drm license server: http://192.168.52.46:5000/proxy
 
@@ -77,6 +41,8 @@ class MainActivity : AppCompatActivity() {
         private const val USERAGENT = "useragent"
     }
 
+    private lateinit var defaultTrackSelector: DefaultTrackSelector
+
     private var exoPlayer: SimpleExoPlayer? = null
     private var exoMediaDrm: ExoMediaDrm<*>? = null
 
@@ -87,7 +53,9 @@ class MainActivity : AppCompatActivity() {
         val playerView = findViewById<PlayerView>(R.id.playerView)
 
         Log.setLogLevel(Log.LOG_LEVEL_ALL)
-        exoPlayer = SimpleExoPlayer.Builder(this).build()
+
+        defaultTrackSelector = DefaultTrackSelector(this)
+        exoPlayer = SimpleExoPlayer.Builder(this).setTrackSelector(defaultTrackSelector).build()
         playerView.player = exoPlayer
     }
 
@@ -128,11 +96,13 @@ class MainActivity : AppCompatActivity() {
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(USERAGENT)
 
         return when (@ContentType Util.inferContentType(uri)) {
-            C.TYPE_DASH -> DashMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+            C.TYPE_DASH -> DashMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(
+                uri
+            )
             C.TYPE_HLS -> HlsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
             C.TYPE_SS -> SsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
             else -> {
-                Log.e("ExoMple","")
+                Log.e("ExoMple", "")
                 null
             }
         }
@@ -141,12 +111,8 @@ class MainActivity : AppCompatActivity() {
     private fun setupPlayer() {
         exoPlayer?.playWhenReady = true
 
-        exoPlayer?.addListener(object : Player.EventListener {
-            override fun onPlayerError(error: ExoPlaybackException) {
-                Log.e("ExoMple", "exoplayer error: $error")
-            }
-        })
-        exoPlayer?.addAnalyticsListener(EventLogger(null))
+        exoPlayer?.addListener(LoggerExoplayerEvents())
+        exoPlayer?.addAnalyticsListener(LoggerAnalytics(defaultTrackSelector))
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -158,35 +124,24 @@ class MainActivity : AppCompatActivity() {
         val mediaDrmProvider = FrameworkMediaDrm.DEFAULT_PROVIDER as ExoMediaDrm.Provider<*>
         exoMediaDrm = mediaDrmProvider.acquireExoMediaDrm(C.WIDEVINE_UUID)
 
-        exoMediaDrm?.setOnKeyStatusChangeListener { mediaDrm, sessionId, exoKeyInformation, hasNewUsableKey ->
-            Log.d(
-                "ExoMple",
-                "ExoMediaDrm, keyEventListener:: MediaDrm: $mediaDrm, sessionId: $sessionId, exoKeyInformation: $exoKeyInformation, hasNewUsableKey: $hasNewUsableKey"
-            )
-
-        }
-        exoMediaDrm?.setOnEventListener { mediaDrm, sessionId, event, extra, data ->
-            Log.d(
-                "ExoMple",
-                "ExoMediaDrm, eventListener:: MediaDrm: $mediaDrm, sessionId: $sessionId, event: $event, extra: $extra, data: $data"
-            )
-        }
+        exoMediaDrm?.setOnKeyStatusChangeListener(LoggerDrmKeyStatus())
+        exoMediaDrm?.setOnEventListener(LoggerDrmEvent())
 
 //        val exoUniqueId1 = exoMediaDrm?.getPropertyString(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
 //        Log.d("ExoMple", "exoUniqueId1: $exoUniqueId1")
 
-        val exoUniqueIdArray = exoMediaDrm?.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
-        exoUniqueIdArray?.let {
-            val exoUniqueId2 = Base64.encodeToString(exoUniqueIdArray, Base64.DEFAULT)
-            Log.d("ExoMple", "exoUniqueId2: $exoUniqueId2")
-            Log.d(
-                "ExoMple",
-                "exoUniqueIdByteArray: ${exoUniqueIdArray.asList().map { it.toChar() }}"
-            )
-        }
-
-        val deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        Log.d("ExoMple", "deviceId: $deviceId")
+//        val exoUniqueIdArray = exoMediaDrm?.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
+//        exoUniqueIdArray?.let {
+//            val exoUniqueId2 = Base64.encodeToString(exoUniqueIdArray, Base64.DEFAULT)
+//            Log.d("ExoMple", "exoUniqueId2: $exoUniqueId2")
+//            Log.d(
+//                "ExoMple",
+//                "exoUniqueIdByteArray: ${exoUniqueIdArray.asList().map { it.toChar() }}"
+//            )
+//        }
+//
+//        val deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+//        Log.d("ExoMple", "deviceId: $deviceId")
 //
 //        val wvDrm = try {
 //            MediaDrm(WIDEVINE_UUID)
