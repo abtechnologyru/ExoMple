@@ -11,6 +11,7 @@ import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.drm.*
 import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.dash.DashMediaSource
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
@@ -35,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         //hls: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8"
         //ss: "http://playready.directtaps.net/smoothstreaming/SSWSS720H264/SuperSpeedway_720.ism/Manifest"
         private const val URL =
-            "http://playready.directtaps.net/smoothstreaming/SSWSS720H264/SuperSpeedway_720.ism/Manifest"
+            "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4"
         private const val LICENSE_URL = ""
 
         private const val USERAGENT = "useragent"
@@ -95,14 +96,18 @@ class MainActivity : AppCompatActivity() {
     private fun createMediaSource(uri: Uri): MediaSource? {
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(USERAGENT)
 
-        return when (@ContentType Util.inferContentType(uri)) {
+        val type = Util.inferContentType(uri)
+        return when (@ContentType type) {
             C.TYPE_DASH -> DashMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(
                 uri
             )
             C.TYPE_HLS -> HlsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
             C.TYPE_SS -> SsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+            C.TYPE_OTHER -> ProgressiveMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(
+                uri
+            )
             else -> {
-                Log.e("ExoMple", "")
+                Log.e("ExoMple", "Unknown URI format, can't create MediaSource")
                 null
             }
         }
