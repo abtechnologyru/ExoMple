@@ -36,10 +36,11 @@ class MainActivity : AppCompatActivity() {
 
         //dash: "http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd"
         //hls: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8"
+        //hls aes: http://try.mediastage.tv/streamingGateway/GetPlayList?fileName=bomfunk4aes.OTT_HLS_CUSTOM.m3u8&serviceArea=LABSPB
         //ss: "http://playready.directtaps.net/smoothstreaming/SSWSS720H264/SuperSpeedway_720.ism/Manifest"
         //udp: "udp://@239.255.105.19:5000"
         private const val URL =
-            "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4"
+            "http://try.mediastage.tv/streamingGateway/GetPlayList?fileName=bomfunk4aes.OTT_HLS_CUSTOM.m3u8&serviceArea=LABSPB"
         private const val LICENSE_URL = ""
 
         private const val USERAGENT = "useragent"
@@ -107,11 +108,19 @@ class MainActivity : AppCompatActivity() {
             C.TYPE_DASH -> DashMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(
                 uri
             )
-            C.TYPE_HLS -> HlsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+            C.TYPE_HLS -> HlsMediaSource.Factory(defaultHttpDataSourceFactory)
+                .createMediaSource(uri)
             C.TYPE_SS -> SsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
-            C.TYPE_OTHER ->  {
-                val dataSourceFactory = if ("udp".equals(uri.getScheme())) udpDataSourceFactory else defaultHttpDataSourceFactory
-                ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(uri)
+            C.TYPE_OTHER -> {
+                //Util.inferContentType(uri) checks only endWith(".m3u8") for HLS stream
+                //But some streams may have ".m3u8" at the middle of URI.
+                if (uri.toString().contains(".m3u8")) {
+                    HlsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
+                } else {
+                    val dataSourceFactory =
+                        if ("udp".equals(uri.getScheme())) udpDataSourceFactory else defaultHttpDataSourceFactory
+                    ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(uri)
+                }
             }
             else -> {
                 Log.e("ExoMple", "Unknown URI format, can't create MediaSource")
