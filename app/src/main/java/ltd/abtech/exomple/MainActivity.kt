@@ -61,10 +61,11 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
         val playerView = findViewById<PlayerView>(R.id.playerView)
-        findViewById<EditText>(R.id.url).setText(URL)
+        val urlView = findViewById<EditText>(R.id.url)
+        urlView.setText(URL)
 
         findViewById<Button>(R.id.button).setOnClickListener{
-            val uri = Uri.parse(findViewById<EditText>(R.id.url).text.toString())
+            val uri = Uri.parse(urlView.text.toString())
             val mediaSource = createMediaSource(uri)
 
             mediaSource?.let {
