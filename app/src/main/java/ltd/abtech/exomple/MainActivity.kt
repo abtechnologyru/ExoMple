@@ -5,6 +5,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.exoplayer2.C
@@ -38,7 +40,10 @@ class MainActivity : AppCompatActivity() {
         //hls: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8"
         //hls aes: http://try.mediastage.tv/streamingGateway/GetPlayList?fileName=bomfunk4aes.OTT_HLS_CUSTOM.m3u8&serviceArea=LABSPB
         //ss: "http://playready.directtaps.net/smoothstreaming/SSWSS720H264/SuperSpeedway_720.ism/Manifest"
-        //udp: "udp://@239.255.105.19:5000"
+
+        // "https://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
+        //udp: "udp://@239.90.10.132:5000"
+
         private const val URL =
             "http://try.mediastage.tv/streamingGateway/GetPlayList?fileName=bomfunk4aes.OTT_HLS_CUSTOM.m3u8&serviceArea=LABSPB"
         private const val LICENSE_URL = ""
@@ -56,6 +61,17 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
         val playerView = findViewById<PlayerView>(R.id.playerView)
+        findViewById<EditText>(R.id.url).setText(URL)
+
+        findViewById<Button>(R.id.button).setOnClickListener{
+            val uri = Uri.parse(findViewById<EditText>(R.id.url).text.toString())
+            val mediaSource = createMediaSource(uri)
+
+            mediaSource?.let {
+                exoPlayer?.prepare(it)
+            } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
+
+        }
 
         Log.setLogLevel(Log.LOG_LEVEL_ALL)
 
@@ -69,13 +85,13 @@ class MainActivity : AppCompatActivity() {
 
         setupPlayer()
 
-        val uri = Uri.parse(URL)
-
-        val mediaSource = createMediaSource(uri)
-
-        mediaSource?.let {
-            exoPlayer?.prepare(it)
-        } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
+//        val uri = Uri.parse(URL)
+//
+//        val mediaSource = createMediaSource(uri)
+//
+//        mediaSource?.let {
+//            exoPlayer?.prepare(it)
+//        } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
 
 
 //        val drmSessionManager = createDrmManager()
