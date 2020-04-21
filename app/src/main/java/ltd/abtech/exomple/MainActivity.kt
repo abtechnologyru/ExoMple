@@ -86,15 +86,6 @@ class MainActivity : AppCompatActivity() {
 
         setupPlayer()
 
-//        val uri = Uri.parse(URL)
-//
-//        val mediaSource = createMediaSource(uri)
-//
-//        mediaSource?.let {
-//            exoPlayer?.prepare(it)
-//        } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
-
-
 //        val drmSessionManager = createDrmManager()
 //
 //        if (drmSessionManager != null) {
