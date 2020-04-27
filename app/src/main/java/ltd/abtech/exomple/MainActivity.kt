@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var defaultTrackSelector: DefaultTrackSelector
 
-    private var exoPlayer: SimpleExoPlayer? = null
+    private lateinit var exoPlayer: SimpleExoPlayer
     private var exoMediaDrm: ExoMediaDrm<*>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
             val mediaSource = createMediaSource(uri)
 
             mediaSource?.let {
-                exoPlayer?.prepare(it)
+                exoPlayer.prepare(it)
             } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
 
         }
@@ -110,12 +110,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun createMediaSource(uri: Uri): MediaSource? {
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(USERAGENT)
-        val udpDataSourceFactory = object : DataSource.Factory {
-            override fun createDataSource() = UdpDataSource()
-        }
 
-        val type = Util.inferContentType(uri)
-        return when (@ContentType type) {
+        return when (@ContentType Util.inferContentType(uri)) {
             C.TYPE_DASH -> DashMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(
                 uri
             )
@@ -128,8 +124,9 @@ class MainActivity : AppCompatActivity() {
                 if (uri.toString().contains(".m3u8")) {
                     HlsMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(uri)
                 } else {
+                    val udpDataSourceFactory = DataSource.Factory { UdpDataSource() }
                     val dataSourceFactory =
-                        if ("udp".equals(uri.getScheme())) udpDataSourceFactory else defaultHttpDataSourceFactory
+                        if ("udp" == uri.scheme) udpDataSourceFactory else defaultHttpDataSourceFactory
                     ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(uri)
                 }
             }
@@ -141,12 +138,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupPlayer() {
-        exoPlayer?.playWhenReady = true
+        exoPlayer.playWhenReady = true
 
-        exoPlayer?.addListener(LoggerExoplayerEvents())
-        exoPlayer?.addAnalyticsListener(LoggerAnalytics(defaultTrackSelector))
+        exoPlayer.addListener(LoggerExoplayerEvents())
+        exoPlayer.addAnalyticsListener(LoggerAnalytics(defaultTrackSelector))
 
-        exoPlayer?.setSubtitlesAvailable(SubtitlesMimeType.WebVtt) {
+        exoPlayer.setSubtitlesAvailable(SubtitlesMimeType.WebVtt) {
             Timber.e("ExoMple subtitles: $it")
         }
     }
@@ -208,8 +205,7 @@ class MainActivity : AppCompatActivity() {
         exoMediaDrm?.release()
         exoMediaDrm = null
 
-        exoPlayer?.stop()
-        exoPlayer?.release()
-        exoPlayer = null
+        exoPlayer.stop()
+        exoPlayer.release()
     }
 }
