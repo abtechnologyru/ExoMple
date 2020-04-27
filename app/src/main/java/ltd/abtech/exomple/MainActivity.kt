@@ -25,6 +25,9 @@ import com.google.android.exoplayer2.upstream.UdpDataSource
 import com.google.android.exoplayer2.util.Log
 import com.google.android.exoplayer2.util.Util
 import ltd.abtech.exomple.logs.*
+import ltd.abtech.exophyta.subtitles.SubtitlesMimeType
+import ltd.abtech.exophyta.subtitles.setSubtitlesAvailable
+import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         //udp: "udp://@239.90.10.132:5000"
 
         private const val URL =
-            "http://try.mediastage.tv/streamingGateway/GetPlayList?fileName=bomfunk4aes.OTT_HLS_CUSTOM.m3u8&serviceArea=LABSPB"
+            "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8"
         private const val LICENSE_URL = ""
 
         private const val USERAGENT = "useragent"
@@ -64,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         val urlView = findViewById<EditText>(R.id.url)
         urlView.setText(URL)
 
-        findViewById<Button>(R.id.button).setOnClickListener{
+        findViewById<Button>(R.id.button).setOnClickListener {
             val uri = Uri.parse(urlView.text.toString())
             val mediaSource = createMediaSource(uri)
 
@@ -142,6 +145,10 @@ class MainActivity : AppCompatActivity() {
 
         exoPlayer?.addListener(LoggerExoplayerEvents())
         exoPlayer?.addAnalyticsListener(LoggerAnalytics(defaultTrackSelector))
+
+        exoPlayer?.setSubtitlesAvailable(SubtitlesMimeType.WebVtt) {
+            Timber.e("ExoMple subtitles: $it")
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.O)
