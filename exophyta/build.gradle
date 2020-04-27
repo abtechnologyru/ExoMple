@@ -30,9 +30,15 @@ afterEvaluate {
         publications {
             release(MavenPublication) {
                 from components.release
+
+                groupId = 'ltd.abtech.exophyta'
+                artifactId = 'exophyta'
             }
             debug(MavenPublication) {
                 from components.debug
+
+                groupId = 'ltd.abtech.exophyta'
+                artifactId = 'exophyta-debug'
             }
         }
     }
