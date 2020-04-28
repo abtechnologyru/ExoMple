@@ -1,14 +1,18 @@
 package ltd.abtech.exomple
 
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.drm.*
@@ -25,8 +29,7 @@ import com.google.android.exoplayer2.upstream.UdpDataSource
 import com.google.android.exoplayer2.util.Log
 import com.google.android.exoplayer2.util.Util
 import ltd.abtech.exomple.logs.*
-import ltd.abtech.exophyta.subtitles.SubtitlesMimeType
-import ltd.abtech.exophyta.subtitles.setSubtitlesAvailable
+import ltd.abtech.exophyta.subtitles.*
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
@@ -59,6 +62,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var exoPlayer: SimpleExoPlayer
     private var exoMediaDrm: ExoMediaDrm<*>? = null
 
+    private lateinit var subtitlesBtn: ImageButton
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -76,6 +81,15 @@ class MainActivity : AppCompatActivity() {
             } ?: Toast.makeText(this, "Can't create MediaSource", Toast.LENGTH_SHORT).show()
 
         }
+
+        subtitlesBtn = findViewById(R.id.subtitlesBtn)
+        with(subtitlesBtn) {
+            visibility = View.GONE
+            setOnClickListener {
+                exoPlayer.getSubtitles(TrackMimeType.WebVtt, this@MainActivity).showPopup()
+            }
+        }
+        subtitlesBtn.visibility = View.GONE
 
         Log.setLogLevel(Log.LOG_LEVEL_ALL)
 
@@ -143,8 +157,10 @@ class MainActivity : AppCompatActivity() {
         exoPlayer.addListener(LoggerExoplayerEvents())
         exoPlayer.addAnalyticsListener(LoggerAnalytics(defaultTrackSelector))
 
-        exoPlayer.setSubtitlesAvailable(SubtitlesMimeType.WebVtt) {
+
+        exoPlayer.setSubtitlesAvailableListener(TrackMimeType.WebVtt) {
             Timber.e("ExoMple subtitles: $it")
+            subtitlesBtn.visibility = View.VISIBLE
         }
     }
 
@@ -207,5 +223,32 @@ class MainActivity : AppCompatActivity() {
 
         exoPlayer.stop()
         exoPlayer.release()
+    }
+
+    @SuppressLint("DefaultLocale")
+    private fun Tracks.showPopup() {
+        if (isNotEmpty()) {
+            val popup = PopupMenu(this@MainActivity, subtitlesBtn)
+            popup.menu.add(
+                0,
+                0,
+                0,
+                "Disabled"
+            ).isChecked = isAllDisabled()
+            forEachIndexed { index, track ->
+                popup.menu.add(0, index, 0, track.name.capitalize()).isChecked = track.selected
+            }
+            popup.menu.setGroupCheckable(0, true, true)
+
+            popup.setOnMenuItemClickListener {
+                if (it.itemId == 0) {
+                    defaultTrackSelector.disableSubtitles()
+                } else {
+                    defaultTrackSelector.selectSubtitle(get(it.itemId))
+                }
+                true
+            }
+            popup.show()
+        }
     }
 }

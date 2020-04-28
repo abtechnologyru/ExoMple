@@ -10,6 +10,10 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "0.8"
+
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
     buildTypes {
         release {
@@ -21,6 +25,8 @@ android {
     compileOptions {
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+
 }
 
 dependencies {
