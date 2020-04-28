@@ -70,8 +70,8 @@ class LoggerExoplayerEvents : Player.EventListener {
 
 class LoggerAnalytics(defaultTrackSelector: DefaultTrackSelector) :
     EventLogger(defaultTrackSelector) {
-    override fun loge(msg: String, tr: Throwable?) {
-        Timber.e("analytics, error, msg: $msg, t: $tr")
+    override fun loge(msg: String) {
+        Timber.d("analytics, error, msg:$msg")
     }
 
     override fun logd(msg: String) {
