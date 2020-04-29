@@ -1,13 +1,18 @@
-package ltd.abtech.exophyta.subtitles.internal
+package ltd.abtech.exophyta.tracks.internal
 
+import android.content.Context
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Format
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
-import ltd.abtech.exophyta.subtitles.TrackMimeType
+import com.google.android.exoplayer2.ui.DefaultTrackNameProvider
+import ltd.abtech.exophyta.tracks.Track
+import ltd.abtech.exophyta.tracks.TrackMimeType
+import ltd.abtech.exophyta.tracks.Tracks
 
 internal data class FormatWithIndecies(val format: Format, val groupIndex: Int, val trackIngex: Int)
 internal data class TrackGroupArrayWithIndecies(
@@ -67,24 +72,33 @@ internal fun MappingTrackSelector.MappedTrackInfo.firstTrackGroupArrayOrNull(ren
     return null
 }
 
-internal fun ExoPlayer.getSelectedSubtitles(mimeType: TrackMimeType): List<String> {
-    val selectedLangs = mutableListOf<String>()
+internal fun ExoPlayer.getSelectedTracks(mimeType: TrackMimeType): List<Format> {
+    val selectedLangs = mutableListOf<Format>()
     currentTrackSelections.forEachSelection { format ->
-        val lang = format.language
-        if (format.sampleMimeType == mimeType.value && lang != null) {
-            selectedLangs += lang
+        val fit = if (mimeType.strictly) {
+            format.sampleMimeType == mimeType.value
+        } else {
+            format.sampleMimeType.orEmpty().contains(mimeType.value)
+        }
+        if (fit) {
+            selectedLangs += format
         }
     }
     return selectedLangs
 }
 
-internal fun DefaultTrackSelector.selectTrackByIsoCodeAndType(
-    isoCode: String,
-    mimeType: TrackMimeType
-) {
-    currentMappedTrackInfo?.firstTrackGroupArrayOrNull(C.TRACK_TYPE_TEXT)?.let { trackGroups ->
+internal fun DefaultTrackSelector.selectTrack(track: Track) {
+    val mimeType = track.trackMimeType
+    val trackType =
+        if (mimeType.type == TrackMimeType.Type.Audio) C.TRACK_TYPE_AUDIO else C.TRACK_TYPE_TEXT
+    currentMappedTrackInfo?.firstTrackGroupArrayOrNull(trackType)?.let { trackGroups ->
         trackGroups.trackGroupArray.firstFormatWithIndeciesOrNull {
-            it.sampleMimeType == mimeType.value && it.language == isoCode
+            val fit = if (mimeType.strictly) {
+                it.sampleMimeType == mimeType.value
+            } else {
+                it.sampleMimeType.orEmpty().contains(mimeType.value)
+            }
+            fit && it.id == track.formatId
         }?.let {
             setParameters(
                 buildUponParameters().clearSelectionOverride(
@@ -99,4 +113,46 @@ internal fun DefaultTrackSelector.selectTrackByIsoCodeAndType(
             )
         }
     }
+}
+
+internal fun ExoPlayer.getTracks(mimeType: TrackMimeType, context: Context?): List<Track> {
+    val selectedLangs = getSelectedTracks(mimeType)
+
+    val tracks = mutableListOf<Track>()
+    val trackNameProvider =
+        if (context != null) DefaultTrackNameProvider(context.resources) else null
+    currentTrackGroups.forEachFormat { format, _, _ ->
+        val lang = format.language
+
+        val fit = if (mimeType.strictly) {
+            format.sampleMimeType == mimeType.value
+        } else {
+            format.sampleMimeType.orEmpty().contains(mimeType.value)
+        }
+
+        if (fit && lang != null) {
+            tracks += Track(
+                lang,
+                trackNameProvider?.getTrackName(format) ?: lang,
+                selectedLangs.contains(format),
+                mimeType, format.id
+            )
+        }
+    }
+    return tracks
+}
+
+internal fun ExoPlayer.setTracksAvailableListener(
+    trackMimeType: TrackMimeType,
+    block: (Tracks) -> Unit
+) {
+    addListener(object : Player.EventListener {
+        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            super.onPlayerStateChanged(playWhenReady, playbackState)
+            val tracks = getTracks(trackMimeType, null)
+            if (tracks.isNotEmpty()) {
+                block(tracks)
+            }
+        }
+    })
 }

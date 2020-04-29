@@ -29,7 +29,7 @@ import com.google.android.exoplayer2.upstream.UdpDataSource
 import com.google.android.exoplayer2.util.Log
 import com.google.android.exoplayer2.util.Util
 import ltd.abtech.exomple.logs.*
-import ltd.abtech.exophyta.subtitles.*
+import ltd.abtech.exophyta.tracks.*
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     private var exoMediaDrm: ExoMediaDrm<*>? = null
 
     private lateinit var subtitlesBtn: ImageButton
+    private lateinit var audioBtn: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,10 +87,19 @@ class MainActivity : AppCompatActivity() {
         with(subtitlesBtn) {
             visibility = View.GONE
             setOnClickListener {
-                exoPlayer.getSubtitles(TrackMimeType.WebVtt, this@MainActivity).showPopup()
+                exoPlayer.getSubtitles(TrackMimeType.WebVtt, this@MainActivity).showSubtitlesPopup()
             }
         }
         subtitlesBtn.visibility = View.GONE
+
+        audioBtn = findViewById(R.id.audioBtn)
+        with(audioBtn) {
+            visibility = View.GONE
+            setOnClickListener {
+                exoPlayer.getAudioTracks(this@MainActivity).showAudioPopup()
+            }
+        }
+        audioBtn.visibility = View.GONE
 
         Log.setLogLevel(Log.LOG_LEVEL_ALL)
 
@@ -162,6 +172,11 @@ class MainActivity : AppCompatActivity() {
             Timber.e("ExoMple subtitles: $it")
             subtitlesBtn.visibility = View.VISIBLE
         }
+
+        exoPlayer.setAudioTracksAvailableListener {
+            Timber.e("ExoMple audiotracks: $it")
+            audioBtn.visibility = View.VISIBLE
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -226,12 +241,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("DefaultLocale")
-    private fun Tracks.showPopup() {
+    private fun Tracks.showSubtitlesPopup() {
         if (isNotEmpty()) {
             val popup = PopupMenu(this@MainActivity, subtitlesBtn)
             popup.menu.add(
                 0,
-                0,
+                -1,
                 0,
                 "Disabled"
             ).isChecked = isAllDisabled()
@@ -241,11 +256,28 @@ class MainActivity : AppCompatActivity() {
             popup.menu.setGroupCheckable(0, true, true)
 
             popup.setOnMenuItemClickListener {
-                if (it.itemId == 0) {
+                if (it.itemId == -1) {
                     defaultTrackSelector.disableSubtitles()
                 } else {
                     defaultTrackSelector.selectSubtitle(get(it.itemId))
                 }
+                true
+            }
+            popup.show()
+        }
+    }
+
+    @SuppressLint("DefaultLocale")
+    private fun Tracks.showAudioPopup() {
+        if (isNotEmpty()) {
+            val popup = PopupMenu(this@MainActivity, audioBtn)
+            forEachIndexed { index, track ->
+                popup.menu.add(0, index, 0, track.name.capitalize()).isChecked = track.selected
+            }
+            popup.menu.setGroupCheckable(0, true, true)
+
+            popup.setOnMenuItemClickListener {
+                defaultTrackSelector.selectAudioTrack(get(it.itemId))
                 true
             }
             popup.show()
