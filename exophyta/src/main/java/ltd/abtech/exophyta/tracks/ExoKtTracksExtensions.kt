@@ -3,13 +3,8 @@ package ltd.abtech.exophyta.tracks
 import android.content.Context
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.ui.DefaultTrackNameProvider
 import ltd.abtech.exophyta.tracks.internal.*
-import ltd.abtech.exophyta.tracks.internal.firstTrackGroupArrayOrNull
-import ltd.abtech.exophyta.tracks.internal.forEachFormat
-import ltd.abtech.exophyta.tracks.internal.getSelectedTracks
 
 fun ExoPlayer.getSubtitles(mimeType: TrackMimeType, context: Context?): List<Track> {
     return getTracks(mimeType, context)
@@ -24,16 +19,17 @@ fun DefaultTrackSelector.selectSubtitle(track: Track) {
 }
 
 fun DefaultTrackSelector.disableSubtitles() {
-    currentMappedTrackInfo?.firstTrackGroupArrayOrNull(C.TRACK_TYPE_TEXT)?.let { trackGroups ->
-        setParameters(
-            buildUponParameters()
-                .clearSelectionOverride(trackGroups.renderIndex, trackGroups.trackGroupArray)
-                .setSelectionOverride(
-                    trackGroups.renderIndex,
-                    trackGroups.trackGroupArray, null
-                )
-        )
-    }
+    currentMappedTrackInfo?.iterable()?.firstOrNull { it.renderType == C.TRACK_TYPE_TEXT }
+        ?.let { trackGroups ->
+            setParameters(
+                buildUponParameters()
+                    .clearSelectionOverride(trackGroups.renderIndex, trackGroups.trackGroupArray)
+                    .setSelectionOverride(
+                        trackGroups.renderIndex,
+                        trackGroups.trackGroupArray, null
+                    )
+            )
+        }
 }
 
 //-----
