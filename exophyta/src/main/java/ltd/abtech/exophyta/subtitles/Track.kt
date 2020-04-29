@@ -3,14 +3,33 @@ package ltd.abtech.exophyta.subtitles
 import com.google.android.exoplayer2.util.MimeTypes
 
 sealed class TrackMimeType() {
+    enum class Type {
+        Audio, Text
+    }
+
     abstract val value: String
+    abstract val type: Type
+    internal abstract val strictly: Boolean
 
     object WebVtt : TrackMimeType() {
         override val value =
             MimeTypes.TEXT_VTT
+        override val type = Type.Text
+        override val strictly = true
     }
 
-    data class Other(override val value: String) : TrackMimeType()
+    object Audio : TrackMimeType() {
+        override val value =
+            MimeTypes.BASE_TYPE_AUDIO
+        override val type = Type.Audio
+        override val strictly = false
+    }
+
+    data class Other(
+        override val value: String,
+        override val type: Type,
+        override val strictly: Boolean
+    ) : TrackMimeType()
 }
 
 typealias Tracks = List<Track>

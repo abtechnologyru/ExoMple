@@ -67,11 +67,16 @@ internal fun MappingTrackSelector.MappedTrackInfo.firstTrackGroupArrayOrNull(ren
     return null
 }
 
-internal fun ExoPlayer.getSelectedSubtitles(mimeType: TrackMimeType): List<String> {
+internal fun ExoPlayer.getSelectedTracks(mimeType: TrackMimeType): List<String> {
     val selectedLangs = mutableListOf<String>()
     currentTrackSelections.forEachSelection { format ->
         val lang = format.language
-        if (format.sampleMimeType == mimeType.value && lang != null) {
+        val fit = if (mimeType.strictly) {
+            format.sampleMimeType == mimeType.value
+        } else {
+            format.sampleMimeType.orEmpty().contains(mimeType.value)
+        }
+        if (fit && lang != null) {
             selectedLangs += lang
         }
     }
@@ -82,9 +87,16 @@ internal fun DefaultTrackSelector.selectTrackByIsoCodeAndType(
     isoCode: String,
     mimeType: TrackMimeType
 ) {
-    currentMappedTrackInfo?.firstTrackGroupArrayOrNull(C.TRACK_TYPE_TEXT)?.let { trackGroups ->
+    val trackType =
+        if (mimeType.type == TrackMimeType.Type.Audio) C.TRACK_TYPE_AUDIO else C.TRACK_TYPE_TEXT
+    currentMappedTrackInfo?.firstTrackGroupArrayOrNull(trackType)?.let { trackGroups ->
         trackGroups.trackGroupArray.firstFormatWithIndeciesOrNull {
-            it.sampleMimeType == mimeType.value && it.language == isoCode
+            val fit = if (mimeType.strictly) {
+                it.sampleMimeType == mimeType.value
+            } else {
+                it.sampleMimeType.orEmpty().contains(mimeType.value)
+            }
+            fit && it.language == isoCode
         }?.let {
             setParameters(
                 buildUponParameters().clearSelectionOverride(
