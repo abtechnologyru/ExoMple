@@ -231,7 +231,7 @@ class MainActivity : AppCompatActivity() {
             val popup = PopupMenu(this@MainActivity, subtitlesBtn)
             popup.menu.add(
                 0,
-                0,
+                -1,
                 0,
                 "Disabled"
             ).isChecked = isAllDisabled()
@@ -241,7 +241,7 @@ class MainActivity : AppCompatActivity() {
             popup.menu.setGroupCheckable(0, true, true)
 
             popup.setOnMenuItemClickListener {
-                if (it.itemId == 0) {
+                if (it.itemId == -1) {
                     defaultTrackSelector.disableSubtitles()
                 } else {
                     defaultTrackSelector.selectSubtitle(get(it.itemId))

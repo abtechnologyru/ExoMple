@@ -38,7 +38,8 @@ data class Track constructor(
     val isoCode: String,
     val name: String,
     val selected: Boolean,
-    val trackMimeType: TrackMimeType
+    val trackMimeType: TrackMimeType,
+    internal val formatId: String?
 )
 
 fun Tracks.isAllDisabled() = all { !it.selected }

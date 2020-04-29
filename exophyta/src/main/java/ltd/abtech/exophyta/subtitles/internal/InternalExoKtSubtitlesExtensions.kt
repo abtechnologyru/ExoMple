@@ -7,6 +7,7 @@ import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import ltd.abtech.exophyta.subtitles.Track
 import ltd.abtech.exophyta.subtitles.TrackMimeType
 
 internal data class FormatWithIndecies(val format: Format, val groupIndex: Int, val trackIngex: Int)
@@ -67,26 +68,23 @@ internal fun MappingTrackSelector.MappedTrackInfo.firstTrackGroupArrayOrNull(ren
     return null
 }
 
-internal fun ExoPlayer.getSelectedTracks(mimeType: TrackMimeType): List<String> {
-    val selectedLangs = mutableListOf<String>()
+internal fun ExoPlayer.getSelectedTracks(mimeType: TrackMimeType): List<Format> {
+    val selectedLangs = mutableListOf<Format>()
     currentTrackSelections.forEachSelection { format ->
-        val lang = format.language
         val fit = if (mimeType.strictly) {
             format.sampleMimeType == mimeType.value
         } else {
             format.sampleMimeType.orEmpty().contains(mimeType.value)
         }
-        if (fit && lang != null) {
-            selectedLangs += lang
+        if (fit) {
+            selectedLangs += format
         }
     }
     return selectedLangs
 }
 
-internal fun DefaultTrackSelector.selectTrackByIsoCodeAndType(
-    isoCode: String,
-    mimeType: TrackMimeType
-) {
+internal fun DefaultTrackSelector.selectTrack(track: Track) {
+    val mimeType = track.trackMimeType
     val trackType =
         if (mimeType.type == TrackMimeType.Type.Audio) C.TRACK_TYPE_AUDIO else C.TRACK_TYPE_TEXT
     currentMappedTrackInfo?.firstTrackGroupArrayOrNull(trackType)?.let { trackGroups ->
@@ -96,7 +94,7 @@ internal fun DefaultTrackSelector.selectTrackByIsoCodeAndType(
             } else {
                 it.sampleMimeType.orEmpty().contains(mimeType.value)
             }
-            fit && it.language == isoCode
+            fit && it.id == track.formatId
         }?.let {
             setParameters(
                 buildUponParameters().clearSelectionOverride(

@@ -6,10 +6,10 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.ui.DefaultTrackNameProvider
+import ltd.abtech.exophyta.subtitles.internal.*
 import ltd.abtech.exophyta.subtitles.internal.firstTrackGroupArrayOrNull
 import ltd.abtech.exophyta.subtitles.internal.forEachFormat
 import ltd.abtech.exophyta.subtitles.internal.getSelectedTracks
-import ltd.abtech.exophyta.subtitles.internal.selectTrackByIsoCodeAndType
 
 internal fun ExoPlayer.getTracks(mimeType: TrackMimeType, context: Context?): List<Track> {
     val selectedLangs = getSelectedTracks(mimeType)
@@ -30,8 +30,8 @@ internal fun ExoPlayer.getTracks(mimeType: TrackMimeType, context: Context?): Li
             tracks += Track(
                 lang,
                 trackNameProvider?.getTrackName(format) ?: lang,
-                selectedLangs.contains(lang),
-                mimeType
+                selectedLangs.contains(format),
+                mimeType, format.id
             )
         }
     }
@@ -51,10 +51,6 @@ internal fun ExoPlayer.setTracksAvailableListener(
             }
         }
     })
-}
-
-internal fun DefaultTrackSelector.selectTrack(track: Track) {
-    selectTrackByIsoCodeAndType(track.isoCode, track.trackMimeType)
 }
 
 //------
