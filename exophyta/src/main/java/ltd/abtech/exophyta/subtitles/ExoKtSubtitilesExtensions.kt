@@ -79,3 +79,25 @@ fun DefaultTrackSelector.disableSubtitles() {
         )
     }
 }
+
+//-----
+fun ExoPlayer.getAudioTracks(context: Context?): List<Track> {
+    val tracks = getTracks(TrackMimeType.Audio, context)
+    if (tracks.size <= 1) {
+        //we filter only one track - it's default track, no need to display it
+        return emptyList()
+    }
+    return tracks
+}
+
+fun ExoPlayer.setAudioTracksAvailableListener(block: (Tracks) -> Unit) {
+    setTracksAvailableListener(TrackMimeType.Audio) {
+        if (it.size > 1) {
+            block(it)
+        }
+    }
+}
+
+fun DefaultTrackSelector.selectAudioTrack(track: Track) {
+    selectTrack(track)
+}
