@@ -1,4 +1,4 @@
-package ltd.abtech.exophyta.subtitles
+package ltd.abtech.exophyta.tracks
 
 import android.content.Context
 import com.google.android.exoplayer2.C
@@ -6,54 +6,10 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.ui.DefaultTrackNameProvider
-import ltd.abtech.exophyta.subtitles.internal.*
-import ltd.abtech.exophyta.subtitles.internal.firstTrackGroupArrayOrNull
-import ltd.abtech.exophyta.subtitles.internal.forEachFormat
-import ltd.abtech.exophyta.subtitles.internal.getSelectedTracks
-
-internal fun ExoPlayer.getTracks(mimeType: TrackMimeType, context: Context?): List<Track> {
-    val selectedLangs = getSelectedTracks(mimeType)
-
-    val tracks = mutableListOf<Track>()
-    val trackNameProvider =
-        if (context != null) DefaultTrackNameProvider(context.resources) else null
-    currentTrackGroups.forEachFormat { format, _, _ ->
-        val lang = format.language
-
-        val fit = if (mimeType.strictly) {
-            format.sampleMimeType == mimeType.value
-        } else {
-            format.sampleMimeType.orEmpty().contains(mimeType.value)
-        }
-
-        if (fit && lang != null) {
-            tracks += Track(
-                lang,
-                trackNameProvider?.getTrackName(format) ?: lang,
-                selectedLangs.contains(format),
-                mimeType, format.id
-            )
-        }
-    }
-    return tracks
-}
-
-internal fun ExoPlayer.setTracksAvailableListener(
-    trackMimeType: TrackMimeType,
-    block: (Tracks) -> Unit
-) {
-    addListener(object : Player.EventListener {
-        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            super.onPlayerStateChanged(playWhenReady, playbackState)
-            val tracks = getTracks(trackMimeType, null)
-            if (tracks.isNotEmpty()) {
-                block(tracks)
-            }
-        }
-    })
-}
-
-//------
+import ltd.abtech.exophyta.tracks.internal.*
+import ltd.abtech.exophyta.tracks.internal.firstTrackGroupArrayOrNull
+import ltd.abtech.exophyta.tracks.internal.forEachFormat
+import ltd.abtech.exophyta.tracks.internal.getSelectedTracks
 
 fun ExoPlayer.getSubtitles(mimeType: TrackMimeType, context: Context?): List<Track> {
     return getTracks(mimeType, context)
@@ -81,6 +37,8 @@ fun DefaultTrackSelector.disableSubtitles() {
 }
 
 //-----
+
+
 fun ExoPlayer.getAudioTracks(context: Context?): List<Track> {
     val tracks = getTracks(TrackMimeType.Audio, context)
     if (tracks.size <= 1) {

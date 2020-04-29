@@ -1,4 +1,4 @@
-package ltd.abtech.exophyta.subtitles
+package ltd.abtech.exophyta.tracks
 
 import com.google.android.exoplayer2.util.MimeTypes
 
