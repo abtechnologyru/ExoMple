@@ -62,6 +62,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var exoPlayer: SimpleExoPlayer
     private var exoMediaDrm: ExoMediaDrm<*>? = null
 
+    private lateinit var audioTracksSelector: AudioTracksSelector
+    private lateinit var subtitlesSelector: SubtitlesSelector
+
     private lateinit var subtitlesBtn: ImageButton
     private lateinit var audioBtn: ImageButton
 
@@ -87,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         with(subtitlesBtn) {
             visibility = View.GONE
             setOnClickListener {
-                exoPlayer.getSubtitles(TrackMimeType.WebVtt, this@MainActivity).showSubtitlesPopup()
+                subtitlesSelector.getSubtitles(this@MainActivity).showSubtitlesPopup()
             }
         }
         subtitlesBtn.visibility = View.GONE
@@ -96,7 +99,7 @@ class MainActivity : AppCompatActivity() {
         with(audioBtn) {
             visibility = View.GONE
             setOnClickListener {
-                exoPlayer.getAudioTracks(this@MainActivity).showAudioPopup()
+                audioTracksSelector.getAudioTracks(this@MainActivity).showAudioPopup()
             }
         }
         audioBtn.visibility = View.GONE
@@ -105,6 +108,11 @@ class MainActivity : AppCompatActivity() {
 
         defaultTrackSelector = DefaultTrackSelector(this)
         exoPlayer = SimpleExoPlayer.Builder(this).setTrackSelector(defaultTrackSelector).build()
+
+        subtitlesSelector =
+            exoPlayer.getSubtitlesSelector(TrackMimeType.WebVtt, defaultTrackSelector)
+        audioTracksSelector = exoPlayer.getAudioTracksSelector(defaultTrackSelector)
+
         playerView.player = exoPlayer
     }
 
@@ -167,13 +175,12 @@ class MainActivity : AppCompatActivity() {
         exoPlayer.addListener(LoggerExoplayerEvents())
         exoPlayer.addAnalyticsListener(LoggerAnalytics(defaultTrackSelector))
 
-
-        exoPlayer.setSubtitlesAvailableListener(TrackMimeType.WebVtt) {
+        subtitlesSelector.setSubtitlesAvailableListener {
             Timber.e("ExoMple subtitles: $it")
             subtitlesBtn.visibility = View.VISIBLE
         }
 
-        exoPlayer.setAudioTracksAvailableListener {
+        audioTracksSelector.setAudioTracksAvailableListener {
             Timber.e("ExoMple audiotracks: $it")
             audioBtn.visibility = View.VISIBLE
         }
@@ -257,9 +264,9 @@ class MainActivity : AppCompatActivity() {
 
             popup.setOnMenuItemClickListener {
                 if (it.itemId == -1) {
-                    defaultTrackSelector.disableSubtitles()
+                    subtitlesSelector.disableSubtitles()
                 } else {
-                    defaultTrackSelector.selectSubtitle(get(it.itemId))
+                    subtitlesSelector.selectSubtitle(get(it.itemId))
                 }
                 true
             }
@@ -277,7 +284,7 @@ class MainActivity : AppCompatActivity() {
             popup.menu.setGroupCheckable(0, true, true)
 
             popup.setOnMenuItemClickListener {
-                defaultTrackSelector.selectAudioTrack(get(it.itemId))
+                audioTracksSelector.selectAudioTrack(get(it.itemId))
                 true
             }
             popup.show()

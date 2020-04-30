@@ -34,9 +34,9 @@ internal fun DefaultTrackSelector.selectTrack(track: Track) {
     val mimeType = track.trackMimeType
     val trackType =
         if (mimeType.type == TrackMimeType.Type.Audio) C.TRACK_TYPE_AUDIO else C.TRACK_TYPE_TEXT
-    currentMappedTrackInfo?.iterable()?.firstOrNull { it.renderType == trackType }
+    currentMappedTrackInfo?.toTrackGroupArrayWithIndecies()?.firstOrNull { it.renderType == trackType }
         ?.let { trackGroups ->
-            trackGroups.trackGroupArray.iterable().firstOrNull {
+            trackGroups.trackGroupArray.toFormatsWithIndices().firstOrNull {
                 val format = it.format
                 format.containsMimeType(mimeType) && format.id == track.formatId
             }?.let {
@@ -61,7 +61,7 @@ internal fun ExoPlayer.getTracks(mimeType: TrackMimeType, context: Context?): Li
     val tracks = mutableListOf<Track>()
     val trackNameProvider =
         if (context != null) DefaultTrackNameProvider(context.resources) else null
-    currentTrackGroups.iterable().forEach { formatwi ->
+    currentTrackGroups.toFormatsWithIndices().forEach { formatwi ->
         val format = formatwi.format
         val lang = format.language
         if (format.containsMimeType(mimeType) && lang != null) {
