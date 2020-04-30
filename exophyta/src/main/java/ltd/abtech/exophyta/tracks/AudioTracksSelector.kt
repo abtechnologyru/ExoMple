@@ -16,11 +16,19 @@ class AudioTracksSelector(
     private val defMimeType = TrackMimeType.Audio
 
     fun getAudioTracks(context: Context?): List<Track> {
-        return exoPlayer.getTracks(defMimeType, context)
+        val tracks = exoPlayer.getTracks(defMimeType, context)
+        if (tracks.size > 1) {
+            return tracks
+        }
+        return emptyList()
     }
 
     fun setAudioTracksAvailableListener(block: (Tracks) -> Unit) {
-        exoPlayer.setTracksAvailableListener(defMimeType, block)
+        exoPlayer.setTracksAvailableListener(defMimeType) {
+            if (it.size > 1) {
+                block(it)
+            }
+        }
     }
 
     fun selectAudioTrack(track: Track) {
