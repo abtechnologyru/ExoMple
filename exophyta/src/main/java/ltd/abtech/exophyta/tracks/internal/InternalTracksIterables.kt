@@ -1,6 +1,7 @@
 package ltd.abtech.exophyta.tracks.internal
 
 import com.google.android.exoplayer2.Format
+import com.google.android.exoplayer2.metadata.Metadata
 import com.google.android.exoplayer2.source.TrackGroup
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector
@@ -43,6 +44,14 @@ internal fun TrackGroupArray.iterable(): Iterable<TrackGroup> {
         trackGroups += get(index)
     }
     return trackGroups
+}
+
+internal fun Metadata.iterable(): Iterable<Metadata.Entry> {
+    val entries = mutableListOf<Metadata.Entry>()
+    for (index in 0 until length()) {
+        entries += get(index)
+    }
+    return entries
 }
 
 internal fun MappingTrackSelector.MappedTrackInfo.iterable(): Iterable<TrackGroupArray> {
